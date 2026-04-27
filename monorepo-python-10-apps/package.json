@@ -1,0 +1,9 @@
+{
+  "name": "monorepo-python-10-apps",
+  "private": true,
+  "workspaces": ["apps/*/frontend"],
+  "scripts": {
+    "lint": "echo 'Use per-app frontend lint in CI'",
+    "test": "echo 'Use per-app frontend tests in CI'"
+  }
+}

@@ -1,0 +1,4 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app-06-frontend, namespace: monorepo-apps }
+spec: { replicas: 1, selector: { matchLabels: { app: app-06-frontend } }, template: { metadata: { labels: { app: app-06-frontend } }, spec: { containers: [{ name: frontend, image: app-06-frontend:latest, ports:[{containerPort:5173}] }] } } }

@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: app-08-backend, namespace: monorepo-apps }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: app-08-backend } }
+  template:
+    metadata: { labels: { app: app-08-backend } }
+    spec:
+      containers:
+        - name: backend
+          image: app-08-backend:latest
+          ports: [{ containerPort: 8000 }]
+          livenessProbe: { httpGet: { path: /health, port: 8000 } }
+          readinessProbe: { httpGet: { path: /health, port: 8000 } }
+          resources: { requests: { cpu: "100m", memory: "128Mi" }, limits: { cpu: "500m", memory: "512Mi" } }

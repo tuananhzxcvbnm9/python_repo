@@ -1,0 +1,421 @@
+version: "3.9"
+services:
+  reverse-proxy:
+    image: nginx:1.27-alpine
+    container_name: reverse-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app-01-frontend
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks: [app-network]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
+      - ./infrastructure/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on: [prometheus]
+    networks: [app-network]
+
+  app-01-backend:
+    build: ./apps/app-01-task-manager/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/app01_db
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-01-frontend:
+    build: ./apps/app-01-task-manager/frontend
+    environment:
+      VITE_API_BASE_URL: /api/app-01
+      VITE_APP_BASE_PATH: /app-01
+    depends_on:
+      app-01-backend:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5173 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-02-backend:
+    build: ./apps/app-02-inventory-system/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/app02_db
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-02-frontend:
+    build: ./apps/app-02-inventory-system/frontend
+    environment:
+      VITE_API_BASE_URL: /api/app-02
+      VITE_APP_BASE_PATH: /app-02
+    depends_on:
+      app-02-backend:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5173 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-03-backend:
+    build: ./apps/app-03-crm-system/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/app03_db
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-03-frontend:
+    build: ./apps/app-03-crm-system/frontend
+    environment:
+      VITE_API_BASE_URL: /api/app-03
+      VITE_APP_BASE_PATH: /app-03
+    depends_on:
+      app-03-backend:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5173 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-04-backend:
+    build: ./apps/app-04-booking-system/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/app04_db
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-04-frontend:
+    build: ./apps/app-04-booking-system/frontend
+    environment:
+      VITE_API_BASE_URL: /api/app-04
+      VITE_APP_BASE_PATH: /app-04
+    depends_on:
+      app-04-backend:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5173 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-05-backend:
+    build: ./apps/app-05-ecommerce-admin/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/app05_db
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-05-frontend:
+    build: ./apps/app-05-ecommerce-admin/frontend
+    environment:
+      VITE_API_BASE_URL: /api/app-05
+      VITE_APP_BASE_PATH: /app-05
+    depends_on:
+      app-05-backend:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5173 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-06-backend:
+    build: ./apps/app-06-learning-management/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/app06_db
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-06-frontend:
+    build: ./apps/app-06-learning-management/frontend
+    environment:
+      VITE_API_BASE_URL: /api/app-06
+      VITE_APP_BASE_PATH: /app-06
+    depends_on:
+      app-06-backend:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5173 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-07-backend:
+    build: ./apps/app-07-expense-tracker/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/app07_db
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-07-frontend:
+    build: ./apps/app-07-expense-tracker/frontend
+    environment:
+      VITE_API_BASE_URL: /api/app-07
+      VITE_APP_BASE_PATH: /app-07
+    depends_on:
+      app-07-backend:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5173 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-08-backend:
+    build: ./apps/app-08-helpdesk-ticketing/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/app08_db
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-08-frontend:
+    build: ./apps/app-08-helpdesk-ticketing/frontend
+    environment:
+      VITE_API_BASE_URL: /api/app-08
+      VITE_APP_BASE_PATH: /app-08
+    depends_on:
+      app-08-backend:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5173 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-09-backend:
+    build: ./apps/app-09-blog-cms/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/app09_db
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-09-frontend:
+    build: ./apps/app-09-blog-cms/frontend
+    environment:
+      VITE_API_BASE_URL: /api/app-09
+      VITE_APP_BASE_PATH: /app-09
+    depends_on:
+      app-09-backend:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5173 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-10-backend:
+    build: ./apps/app-10-analytics-dashboard/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/app10_db
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      LOG_LEVEL: ${LOG_LEVEL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  app-10-frontend:
+    build: ./apps/app-10-analytics-dashboard/frontend
+    environment:
+      VITE_API_BASE_URL: /api/app-10
+      VITE_APP_BASE_PATH: /app-10
+    depends_on:
+      app-10-backend:
+        condition: service_healthy
+    networks: [app-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:5173 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+  grafana_data:
+
+networks:
+  app-network:
+    name: app-network

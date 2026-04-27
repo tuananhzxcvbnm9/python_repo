@@ -1,0 +1,43 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: 'app-01-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app-01-backend:8000']
+  - job_name: 'app-02-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app-02-backend:8000']
+  - job_name: 'app-03-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app-03-backend:8000']
+  - job_name: 'app-04-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app-04-backend:8000']
+  - job_name: 'app-05-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app-05-backend:8000']
+  - job_name: 'app-06-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app-06-backend:8000']
+  - job_name: 'app-07-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app-07-backend:8000']
+  - job_name: 'app-08-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app-08-backend:8000']
+  - job_name: 'app-09-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app-09-backend:8000']
+  - job_name: 'app-10-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['app-10-backend:8000']

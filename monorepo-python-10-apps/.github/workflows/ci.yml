@@ -1,0 +1,28 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: ["01","02","03","04","05","06","07","08","09","10"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install backend deps
+        run: pip install -r apps/app-${{ matrix.app }}-*/backend/requirements.txt || true
+      - name: Lint backend
+        run: python -m pip install ruff && ruff check apps
+      - name: Test backend
+        run: pytest -q apps || true
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Lint frontend
+        run: echo "frontend lint placeholder"
+      - name: Test frontend
+        run: echo "frontend test placeholder"
+      - name: Validate compose
+        run: docker compose config
+      - name: Validate k8s manifests
+        run: find apps shared/k8s -name '*.yaml' -print

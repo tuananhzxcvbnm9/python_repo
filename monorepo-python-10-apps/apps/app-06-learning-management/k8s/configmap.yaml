@@ -1,0 +1,4 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: app-06-config, namespace: monorepo-apps }
+data: { APP_NAME: "Learning Management" }
