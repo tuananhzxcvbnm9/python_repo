@@ -1,0 +1,4 @@
+apiVersion: v1
+kind: Service
+metadata: { name: app-04-frontend, namespace: monorepo-apps }
+spec: { selector: { app: app-04-frontend }, ports: [{ port: 80, targetPort: 5173 }] }
